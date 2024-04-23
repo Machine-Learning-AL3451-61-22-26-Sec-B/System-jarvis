@@ -1,97 +1,58 @@
+import streamlit as st
 import pandas as pd
-df_tennis=pd.read_csv('PlayTennis.csv')
-print(df_tennis)
-def entropy(probs): 
-  import math
-  return sum( [-prob*math.log(prob, 2) for prob in probs])
+import numpy as np
 
-def entropy_of_list(a_list): 
-  from collections import Counter
-  cnt = Counter(x for x in a_list)
-  
-  num_instances = len(a_list)*1.0
-  print("\n Number of Instances of the Current Sub Class is {0}:".format(num_instances ))
-  probs = [x / num_instances for x in cnt.values()] 
-  print("\n Classes:",min(cnt),max(cnt))
-  print(" \n Probabilities of Class {0} is {1}:".format(min(cnt),min(probs)))
-  print(" \n Probabilities of Class {0} is {1}:".format(max(cnt),max(probs)))
-  return entropy(probs) 
-   
-print("\n INPUT DATA SET FOR ENTROPY CALCULATION:\n", df_tennis['Play_Tennis'])
+def generate_synthetic_data():
+    # Generate synthetic data
+    np.random.seed(42)
+    n_samples = 100
+    n_features = 4
+    X = np.random.randn(n_samples, n_features)
+    y = np.random.randint(0, 3, n_samples)  # Three classes
+    df = pd.DataFrame(X, columns=[f"Feature_{i+1}" for i in range(n_features)])
+    df['target'] = y
+    return df
 
-total_entropy = entropy_of_list(df_tennis['Play_Tennis'])
- 
-print("\n Total Entropy of PlayTennis Data Set:",total_entropy)
-def information_gain(df, split_attribute_name, target_attribute_name, trace=0):
-  print("Information Gain Calculation of ",split_attribute_name)
-  '''
-  Takes a DataFrame of attributes, and quantifies the entropy of a target
-  attribute after performing a split along the values of another attribute.
-  '''
-  df_split = df.groupby(split_attribute_name)
-  
-  nobs = len(df.index) * 1.0
-  
-  df_agg_ent = df_split.agg({target_attribute_name : [entropy_of_list, lambda x: len(x)/nobs]})[target_attribute_name]
-  
-  df_agg_ent.columns = ['Entropy', 'PropObservations']
-  
-  new_entropy = sum( df_agg_ent['Entropy'] * df_agg_ent['PropObservations'] )
-  old_entropy = entropy_of_list(df[target_attribute_name])
-  return old_entropy - new_entropy
+def train_model(df):
+    X = df.drop(columns=['target'])
+    y = df['target']
+    # Dummy model for demonstration
+    class_counts = y.value_counts().to_dict()
+    most_common_class = max(class_counts, key=class_counts.get)
+    return most_common_class
 
-print('Info-gain for Outlook is :'+str( information_gain(df_tennis, 'Outlook', 'Play_Tennis')),"\n")
-print('\n Info-gain for Humidity is: ' + str( information_gain(df_tennis, 'Humidity', 'Play_Tennis')),"\n")
-print('\n Info-gain for Wind is:' + str( information_gain(df_tennis, 'Wind', 'Play_Tennis')),"\n")
-print('\n Info-gain for Temperature is:' + str( information_gain(df_tennis,'Temperature','Play_Tennis')),"\n")
-def id3(df, target_attribute_name, attribute_names, default_class=None):
-  
-  from collections import Counter
-  cnt = Counter(x for x in df[target_attribute_name])
-  
-  if len(cnt) == 1:
-    return next(iter(cnt)) 
-  elif df.empty or (not attribute_names):
-    return default_class 
-  
-  else:
-      default_class = max(cnt.keys())
-      gainz = [information_gain(df, attr, target_attribute_name) for attr in attribute_names] #
-      index_of_max = gainz.index(max(gainz))
-      best_attr = attribute_names[index_of_max]
-      tree = {best_attr:{}} 
-      remaining_attribute_names = [i for i in attribute_names if i != best_attr]
-      for attr_val, data_subset in df.groupby(best_attr):
-        subtree = id3(data_subset,target_attribute_name,remaining_attribute_names,default_class)
-      tree[best_attr][attr_val] = subtree
-      return tree
+def evaluate_model(df, most_common_class):
+    y_true = df['target']
+    y_pred = np.full_like(y_true, most_common_class)
+    accuracy = np.mean(y_true == y_pred)
+    return accuracy, y_pred
 
-attribute_names = list(df_tennis.columns)
-print("List of Attributes:", attribute_names) 
-attribute_names.remove('Play_Tennis') 
-print("Predicting Attributes:", attribute_names)
+def main():
+    st.title("Dummy Classifier")
+    st.write("This app demonstrates a dummy classifier using synthetic data.")
 
+    # Generate synthetic data
+    df = generate_synthetic_data()
 
-from pprint import pprint
-tree = id3(df_tennis,'Play_Tennis',attribute_names)
-print("\n\nThe Resultant Decision Tree is :\n")
-pprint(tree)
-attribute = next(iter(tree))
-print("Best Attribute :\n",attribute)
-print("Tree Keys:\n",tree[attribute].keys())
-def classify(instance, tree, default=None):
-  attribute = next(iter(tree)) 
-  print("Key:",tree.keys()) 
-  print("Attribute:",attribute)
-  if instance[attribute] in tree[attribute].keys():
-    result = tree[attribute][instance[attribute]]
-    print("Instance Attribute:",instance[attribute],"TreeKeys :",tree[attribute].keys())
-    if isinstance(result, dict): 
-      return classify(instance, result)
-    else:
-      return result 
-  else:
-    return default
-df_tennis['predicted'] = df_tennis.apply(classify, axis=1, args=(tree,'No') ) 
-print(df_tennis['predicted'])
-df_tennis[['Play_Tennis', 'predicted']]
+    # Display dataset
+    st.subheader("Synthetic Dataset")
+    st.write(df)
+
+    # Train model
+    most_common_class = train_model(df)
+
+    # Display most common class
+    st.subheader("Most Common Class")
+    st.write("The most common class in the dataset is:", most_common_class)
+
+    # Evaluate model
+    accuracy, y_pred = evaluate_model(df, most_common_class)
+    st.subheader("Model Evaluation")
+    st.write("Accuracy:", accuracy)
+
+    # Display predicted values
+    st.subheader("Predicted Values")
+    st.write("Predicted values:", y_pred)
+
+if __name__ == "__main__":
+    main()
