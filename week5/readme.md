@@ -35,8 +35,3 @@ Once the application is running, it provides a user interface where users can in
 ## Contributing
 Contributions are welcome! If you have suggestions or find any issues, feel free to open an issue or submit a pull request.
 
-
-## Links:
-- [Streamlit App](https://mlweek5.streamlit.app/)
-- [Medium Article](https://medium.com/@vikramkaruppannan6807/naive-bayesian-classifier-3dab356a5e58)
-
